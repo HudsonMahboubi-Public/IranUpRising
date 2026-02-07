@@ -28,8 +28,50 @@
             z-index: -2;
             pointer-events: none;
         }
-        h1 { text-align: center; color: #c0392b; margin: 30px 0 40px; text-shadow: 1px 1px 3px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #c0392b; margin: 30px 0 20px; text-shadow: 1px 1px 3px rgba(0,0,0,0.15); }
         h2 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin: 50px 0 25px; font-size: 1.8em; background: rgba(255,255,255,0.7); display: inline-block; padding: 8px 16px; border-radius: 6px; }
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto 40px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .search-container label { font-weight: bold; display: block; margin-bottom: 10px; font-size: 1.1em; }
+        .search-container input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .search-btn {
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-btn:hover { background: #a93226; }
+        #search-result {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            min-height: 80px;
+            text-align: center;
+        }
+        #search-result .mp-name { font-size: 1.4em; font-weight: bold; color: #2c3e50; margin-bottom: 15px; }
+        #search-result .error { color: #c0392b; font-weight: bold; }
         .province-container { margin-bottom: 40px; }
         .mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
         .mp-card { background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 18px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); transition: all 0.18s ease; backdrop-filter: blur(4px); }
@@ -44,6 +86,15 @@
 </head>
 <body>
     <h1>Canadian MPs – Grouped by Province</h1>
+
+    <!-- New: Postal Code Search at Top -->
+    <div class="search-container">
+        <label for="postalcode">Find Your MP by Postal Code (e.g. L4C0A1)</label>
+        <input type="text" id="postalcode" placeholder="L4C0A1" pattern="[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d" title="Format: A1A1A1 or A1A 1A1" required>
+        <button class="search-btn" onclick="findMP()">Find My MP</button>
+        <div id="search-result"></div>
+    </div>
+
 <div class="province-container">
   <h2>Alberta <span class="mp-count">(37 MPs)</span></h2>
   <div class="mp-grid">
@@ -1814,4 +1865,136 @@
     </div>
   </div>
 </div>
-</body></html>
+
+    <script>
+        function findMP() {
+            const resultDiv = document.getElementById('search-result');
+            resultDiv.innerHTML = '<div>Loading...</div>';
+
+            let postal = document.getElementById('postalcode').value.trim().toUpperCase().replace(/\s+/g, '');
+            if (!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(postal)) {
+                resultDiv.innerHTML = '<div class="error">Invalid postal code format. Example: L4C0A1</div>';
+                return;
+            }
+
+            fetch(`https://represent.opennorth.ca/postcodes/${postal}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Not found');
+                    return response.json();
+                })
+                .then(data => {
+                    const mp = data.representatives_centroid?.find(r => 
+                        r.representative_set_name === 'House of Commons' && r.elected_office === 'MP'
+                    );
+
+                    if (mp && mp.name && mp.email) {
+                        const fullName = mp.name.trim();
+                        const email = mp.email.trim();
+                        const body = `Dear Honourable MP ${fullName},
+
+The Iranian regime continues to carry out an ongoing massacre against its own people, killing protesters, political dissidents, women, children, and ethnic minorities in a brutal campaign of repression. Canada has long stood as a champion of human rights and democratic values around the world. As Iranian-Canadians deeply committed to both our adopted country and the freedom of our homeland, we urgently need our Government to step up and take concrete action in support of the Iranian people.
+
+We respectfully submit the following requests for your consideration and support:
+
+A) Political, Security, and Foreign Policy Requests
+
+1. Establishment of a Canada-led international alliance against the Islamic Republic of Iran
+Given the Islamic Republic’s commission of crimes against humanity, there is an urgent obligation for collective international action to protect the Iranian population. We respectfully urge the Government of Canada to assume a leadership role in forming an international alliance to coordinate unified political, legal, economic, and protective measures against the regime.
+We call on Prime Minister Mark Carney’s government to invite European Union member states and other like-minded countries to join this global initiative, grounded in the Responsibility to Protect (R2P) principle.
+
+2. Cutting off the financial resources of the Islamic Republic
+	•	Intensification of financial and banking sanctions against IRGC-affiliated entities
+	•	Identification of money-laundering networks and regime-linked asset transfers within Canada
+	•	Freezing of regime-linked assets and exploration of legal mechanisms to allocate them for the benefit of the Iranian people
+
+3. Internet freedom and communications access for the people of Iran
+	•	Formal Canadian government support for free, stable, and uncensored internet access for Iranians
+	•	Expansion of Canada-based infrastructure such as Psiphon
+	•	Legal and financial facilitation of secure anti-filtering and communications tools
+	•	Political and financial support for satellite internet solutions, including Starlink
+	•	Examination of Canadian participation in European initiatives such as the transfer of Eutelsat terminals
+	•	Coordination with allies to maintain connectivity during nationwide internet shutdowns
+
+4. Identification, expulsion, and accountability of Islamic Republic agents in Canada
+	•	Publication of a transparent government report outlining:
+	•	The number of regime affiliates in Canada
+	•	Measures taken to expel, restrict, or monitor them
+	•	Parliamentary engagement with the Minister of Public Safety, the Honourable Gary Anandasangaree
+	•	Legal accountability for perpetrators under the principle of universal jurisdiction
+
+5. Addressing IRGC-aligned lobbying structures in Canada
+	•	Independent review of organizations operating in Canada that promote or justify IRGC narratives, including the Iranian Canadian Congress
+	•	Investigation into funding sources, affiliations, and political activities
+	•	Appropriate legal action if support for or normalization of a listed terrorist organization is established
+
+6. Immediate release of all political prisoners
+	•	Continuous parliamentary advocacy
+	•	Coordinated diplomatic pressure with allies
+	•	Public and official support for families of political prisoners
+
+7. Referral of Iran’s case to the United Nations Security Council under R2P
+	•	Active Canadian diplomacy to place Iran on the Security Council agenda
+	•	Invocation of the Responsibility to Protect principle in response to mass civilian repression
+
+8. International coordination for IRGC terrorist designation
+	•	Canadian leadership in encouraging allies, including the United Kingdom, to designate the IRGC as a terrorist organization
+	•	Alignment of allied security and legal frameworks
+
+9. Sustaining visibility of Iran in Canadian politics and media
+	•	Regular parliamentary engagement on Iran
+	•	Media interviews and participation in community events
+	•	Continued visible solidarity by Canadian political leaders with the Iranian-Canadian community
+
+B) Medical, Humanitarian, and Public Health Requests
+
+1. Formal support for Iran’s medical community and accountability for medical violations
+	•	Engagement by the Canadian Medical Association and the Royal College of Physicians and Surgeons of Canada with the World Health Organization regarding attacks on medical facilities, denial of care, and the arrest and torture of healthcare workers
+
+2. Diplomatic pressure for entry of independent medical aid
+	•	Pressuring Iranian authorities to allow access for Médecins Sans Frontières and the International Committee of the Red Cross
+	•	Ensuring full operational independence from the Iranian regime
+
+3. Immediate release of detained healthcare workers
+	•	Prioritizing the release of imprisoned doctors, nurses, and paramedics
+	•	Raising the issue in international medical and health forums
+
+4. Medical-focused fact-finding mission on the January killings
+	•	Support for an independent medical-legal investigation
+	•	Documentation of deaths, severe injuries, and denial of treatment
+	•	Cooperation with the United Nations to interview affected families
+
+5. Direct medical assistance to the Iranian population
+	•	Establishing mechanisms for medical aid to reach civilians directly
+	•	Ensuring no regime involvement in distribution
+	•	Utilizing trusted international humanitarian channels
+
+6. Enhanced engagement of UN specialized agencies
+	•	Stronger WHO involvement in addressing medical violations
+	•	Meaningful UNICEF engagement regarding the killing, detention, and harm of children
+
+Thank you for your time and for your continued attention to this matter. I remain at your disposal should further information or discussion be helpful.
+
+Sincerely,
+[Your Name]
+[City, Province]`;
+                        const subjEnc = 'Request:%20Strengthen%20Canada%E2%80%99s%20Response%20to%20Crimes%20Against%20Humanity%20in%20Iran';
+                        const bodyEnc = encodeURIComponent(body).replace(/'/g, "%E2%80%99");
+                        const mailto = `mailto:${email}?subject=${subjEnc}&body=${bodyEnc}`;
+
+                        resultDiv.innerHTML = `
+                            <div class="mp-name">${fullName}</div>
+                            <a href="${mailto}" target="_blank" style="text-decoration:none;">
+                                <button class="search-btn" style="margin-top:15px;">Send Email to ${fullName.split(' ').pop()}</button>
+                            </a>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = '<div class="error">MP or email not found for this postal code.<br>Use the list below or check ourcommons.ca.</div>';
+                    }
+                })
+                .catch(() => {
+                    resultDiv.innerHTML = '<div class="error">Error fetching MP data. Try again or use the list below.</div>';
+                });
+        }
+    </script>
+</body>
+</html>
